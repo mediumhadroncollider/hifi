@@ -8,6 +8,11 @@ export function escapeCssForHtmlStyleElement(css: string): string {
   return css.replace(/<\/style/gi, (closingTagStart) => `<\\/${closingTagStart.slice(2)}`);
 }
 
+export interface SerializeDocumentOptions {
+  /** Trusted HTML appended just before the closing body tag. */
+  bodyEndHtml?: string;
+}
+
 const PREVIEW_RESET_CSS = `*,
 *::before,
 *::after {
@@ -19,7 +24,7 @@ body {
   min-height: 100vh;
 }`;
 
-export function serializeDocument(project: HifiProject): string {
+export function serializeDocument(project: HifiProject, options: SerializeDocumentOptions = {}): string {
   const css = [PREVIEW_RESET_CSS, serializeCss(project)].filter((chunk) => chunk.length > 0).join('\n\n');
   const html = serializeHtml(project);
 
@@ -33,7 +38,8 @@ ${escapeCssForHtmlStyleElement(css)}
     </style>
   </head>
   <body>
-${html}
+${html}${options.bodyEndHtml ? `
+${options.bodyEndHtml}` : ''}
   </body>
 </html>`;
 }

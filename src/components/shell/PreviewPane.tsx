@@ -70,6 +70,7 @@ export function PreviewPane() {
         <iframe
           ref={iframeRef}
           className="block h-full w-full border-0 bg-white"
+          sandbox="allow-scripts"
           srcDoc={previewState.srcDoc}
           title="HiFi preview"
         />
