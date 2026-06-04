@@ -41,6 +41,8 @@ function serializePreviewRuntime(): string {
 
       event.preventDefault();
       event.stopPropagation();
+      // The sandboxed srcDoc iframe has an opaque origin, so targetOrigin must be '*'.
+      // The parent validates event.source and the message type before accepting it.
       window.parent.postMessage({ type: MESSAGE_TYPE, nodeId }, '*');
     },
     true,
@@ -53,11 +55,6 @@ export function serializePreviewDocument(project: HifiProject): string {
   const scriptMarkup = `    <script>
 ${runtimeScript}
     </script>`;
-  const documentHtml = serializeDocument(project);
 
-  if (documentHtml.includes('\n  </body>')) {
-    return documentHtml.replace('\n  </body>', `\n${scriptMarkup}\n  </body>`);
-  }
-
-  return `${documentHtml}\n${scriptMarkup}`;
+  return serializeDocument(project, { bodyEndHtml: scriptMarkup });
 }
