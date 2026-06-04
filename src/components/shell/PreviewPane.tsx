@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
-import { serializeDocument } from '../../renderer';
+import { useEffect, useMemo, useRef } from 'react';
+import { PREVIEW_NODE_SELECTED_MESSAGE_TYPE, serializePreviewDocument } from '../../renderer';
+import type { PreviewNodeSelectedMessage } from '../../renderer';
 import { useProjectStore } from '../../store/projectStore';
 
 export function PreviewPane() {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const project = useProjectStore((state) => state.project);
+  const selectNode = useProjectStore((state) => state.selectNode);
 
   const previewState = useMemo(() => {
     if (!project.rootNodeId || !project.nodes[project.rootNodeId]) {
@@ -16,7 +19,7 @@ export function PreviewPane() {
     try {
       return {
         error: null,
-        srcDoc: serializeDocument(project),
+        srcDoc: serializePreviewDocument(project),
       };
     } catch (error) {
       return {
@@ -26,10 +29,46 @@ export function PreviewPane() {
     }
   }, [project]);
 
+  useEffect(() => {
+    function isPreviewNodeSelectedMessage(data: unknown): data is PreviewNodeSelectedMessage {
+      return (
+        typeof data === 'object' &&
+        data !== null &&
+        'type' in data &&
+        data.type === PREVIEW_NODE_SELECTED_MESSAGE_TYPE &&
+        'nodeId' in data &&
+        typeof data.nodeId === 'string'
+      );
+    }
+
+    function handleMessage(event: MessageEvent) {
+      if (event.source !== iframeRef.current?.contentWindow) {
+        return;
+      }
+
+      if (!isPreviewNodeSelectedMessage(event.data)) {
+        return;
+      }
+
+      if (!project.nodes[event.data.nodeId]) {
+        return;
+      }
+
+      selectNode(event.data.nodeId);
+    }
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [project.nodes, selectNode]);
+
   return (
     <section className="h-full min-h-0 min-w-0 overflow-hidden bg-white text-slate-950">
       {previewState.srcDoc ? (
         <iframe
+          ref={iframeRef}
           className="block h-full w-full border-0 bg-white"
           srcDoc={previewState.srcDoc}
           title="HiFi preview"
