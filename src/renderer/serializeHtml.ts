@@ -9,13 +9,22 @@ export function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
-export function getNodeClassName(nodeId: string): string {
-  const safeId = nodeId
-    .trim()
-    .replace(/[^a-zA-Z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+function encodeNodeIdForClassName(nodeId: string): string {
+  if (nodeId.length === 0) {
+    return 'empty';
+  }
 
-  return `hifi-node-${safeId || 'node'}`;
+  const encodedCodeUnits: string[] = [];
+
+  for (let index = 0; index < nodeId.length; index += 1) {
+    encodedCodeUnits.push(nodeId.charCodeAt(index).toString(16).padStart(4, '0'));
+  }
+
+  return `u${encodedCodeUnits.join('-u')}`;
+}
+
+export function getNodeClassName(nodeId: string): string {
+  return `hifi-node-${encodeNodeIdForClassName(nodeId)}`;
 }
 
 function renderNodeChildren(project: HifiProject, node: HifiNode, depth: number): string[] {
