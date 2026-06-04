@@ -1,13 +1,49 @@
+import { useMemo } from 'react';
+import { serializeDocument } from '../../renderer';
+import { useProjectStore } from '../../store/projectStore';
+
 export function PreviewPane() {
-  return (
-    <section className="min-h-0 overflow-auto bg-slate-100 p-8 text-slate-950">
-      <div className="mx-auto flex min-h-full max-w-5xl items-center justify-center rounded-2xl border border-slate-300 bg-white shadow-sm">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">Preview</h2>
-          <p className="mt-2 text-sm text-slate-500">Preview renderer will be implemented in E4/T4.</p>
-          <p className="mt-4 text-xs text-slate-400">HTML/CSS serializer is ready for the next preview milestone.</p>
+  const project = useProjectStore((state) => state.project);
+
+  const previewState = useMemo(() => {
+    if (!project.rootNodeId || !project.nodes[project.rootNodeId]) {
+      return {
+        error: 'Preview is unavailable because the project does not contain a renderable root node.',
+        srcDoc: null,
+      };
+    }
+
+    try {
+      return {
+        error: null,
+        srcDoc: serializeDocument(project),
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : 'The preview document could not be serialized.',
+        srcDoc: null,
+      };
+    }
+  }, [project]);
+
+  if (!previewState.srcDoc) {
+    return (
+      <section className="flex h-full min-h-0 items-center justify-center bg-white text-slate-950">
+        <div className="max-w-md text-center">
+          <h2 className="text-sm font-semibold text-slate-900">Document preview unavailable</h2>
+          <p className="mt-2 text-sm text-slate-500">{previewState.error}</p>
         </div>
-      </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="h-full min-h-0 overflow-hidden bg-white">
+      <iframe
+        className="block h-full w-full border-0 bg-white"
+        srcDoc={previewState.srcDoc}
+        title="HiFi preview"
+      />
     </section>
   );
 }
