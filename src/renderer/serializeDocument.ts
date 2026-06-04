@@ -2,6 +2,12 @@ import type { HifiProject } from '../project/types';
 import { serializeCss } from './serializeCss';
 import { serializeHtml } from './serializeHtml';
 
+// CSS is raw text in a <style> element, so an authored </style> sequence
+// must not be allowed to terminate the element early.
+export function escapeCssForHtmlStyleElement(css: string): string {
+  return css.replace(/<\/style/gi, (closingTagStart) => `<\\/${closingTagStart.slice(2)}`);
+}
+
 const PREVIEW_RESET_CSS = `*,
 *::before,
 *::after {
@@ -23,7 +29,7 @@ export function serializeDocument(project: HifiProject): string {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-${css}
+${escapeCssForHtmlStyleElement(css)}
     </style>
   </head>
   <body>
